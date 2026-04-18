@@ -1,7 +1,7 @@
 selenium
 webdriver-manager
 pandas
-tensorflow
+tensorflow-cpu
 scikit-learn
 streamlit
 matplotlib
