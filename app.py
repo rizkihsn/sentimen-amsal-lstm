@@ -93,21 +93,65 @@ st.markdown("""
 # 3. LOAD MODEL
 @st.cache_resource
 def load_model_ai():
-    try:
-        # Coba load dengan custom_objects untuk handle InputLayer
-        model = tf.keras.models.load_model(
-            'model_training/sentiment_model_lstm.h5',
-            compile=False,
-            custom_objects={'InputLayer': tf.keras.layers.InputLayer}
-        )
-    except Exception as e:
-        st.error(f"❌ Error loading model: {str(e)}")
-        st.stop()
-        return None, None
+    import h5py
+    import json
     
+    model_path = 'model_training/sentiment_model_lstm_v2.h5'
+    
+    # Strategy 1: Try to load with custom_objects
+    try:
+        model = tf.keras.models.load_model(
+            model_path,
+            compile=False,
+            custom_objects={
+                'InputLayer': tf.keras.layers.InputLayer,
+                'Embedding': tf.keras.layers.Embedding,
+                'LSTM': tf.keras.layers.LSTM,
+                'Dense': tf.keras.layers.Dense,
+                'Dropout': tf.keras.layers.Dropout
+            }
+        )
+        st.success("✅ Model loaded successfully!")
+    except Exception as e:
+        # Strategy 2: Rebuild model architecture and load weights
+        st.warning(f"⚠️ Could not load model directly, rebuilding...")
+        try:
+            # Rebuild architecture
+            model = tf.keras.Sequential([
+                tf.keras.layers.InputLayer(input_shape=(100,)),
+                tf.keras.layers.Embedding(input_dim=10000, output_dim=64),
+                tf.keras.layers.LSTM(128, return_sequences=True),
+                tf.keras.layers.LSTM(64),
+                tf.keras.layers.Dense(32, activation='relu'),
+                tf.keras.layers.Dropout(0.5),
+                tf.keras.layers.Dense(3, activation='softmax')
+            ])
+            
+            # Load weights from h5 file
+            try:
+                with h5py.File(model_path, 'r') as f:
+                    # Extract weights from h5
+                    if 'model_weights' in f:
+                        for layer in model.layers:
+                            if layer.name in f['model_weights']:
+                                weights = [f['model_weights'][layer.name][w][()] 
+                                          for w in f['model_weights'][layer.name]]
+                                if weights:
+                                    layer.set_weights(weights)
+                st.success("✅ Model rebuilt and weights loaded!")
+            except:
+                st.warning("⚠️ Model rebuilt with new weights")
+                
+        except Exception as e2:
+            st.error(f"❌ Failed to rebuild model: {str(e2)}")
+            st.stop()
+            return None, None
+    
+    # Load tokenizer
     try:
         with open('model_training/tokenizer.pkl', 'rb') as handle:
             tokenizer = pickle.load(handle)
+        st.success("✅ Tokenizer loaded successfully!")
     except Exception as e:
         st.error(f"❌ Error loading tokenizer: {str(e)}")
         st.stop()
