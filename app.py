@@ -93,10 +93,15 @@ st.markdown("""
 # 3. LOAD MODEL
 @st.cache_resource
 def load_model_ai():
-    model = tf.keras.models.load_model(
-        'model_training/sentiment_model_lstm.h5',
-        compile=False
-    )
+    try:
+        model = tf.keras.models.load_model(
+            'model_training/sentiment_model_lstm.h5',
+            compile=False,
+            custom_objects={'InputLayer': tf.keras.layers.InputLayer}
+        )
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None, None
     
     with open('model_training/tokenizer.pkl', 'rb') as handle:
         tokenizer = pickle.load(handle)
