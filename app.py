@@ -94,23 +94,35 @@ st.markdown("""
 @st.cache_resource
 def load_model_ai():
     try:
+        # Coba load dengan custom_objects untuk handle InputLayer
         model = tf.keras.models.load_model(
             'model_training/sentiment_model_lstm.h5',
             compile=False,
             custom_objects={'InputLayer': tf.keras.layers.InputLayer}
         )
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        st.error(f"❌ Error loading model: {str(e)}")
+        st.stop()
         return None, None
     
-    with open('model_training/tokenizer.pkl', 'rb') as handle:
-        tokenizer = pickle.load(handle)
+    try:
+        with open('model_training/tokenizer.pkl', 'rb') as handle:
+            tokenizer = pickle.load(handle)
+    except Exception as e:
+        st.error(f"❌ Error loading tokenizer: {str(e)}")
+        st.stop()
+        return None, None
         
     return model, tokenizer
 
 model, tokenizer = load_model_ai()
+
 # 4. FUNGSI PREDIKSI
 def predict_sentiment(text, model, tokenizer):
+    if model is None or tokenizer is None:
+        st.error("❌ Model atau tokenizer tidak tersedia")
+        return None, None, None
+    
     text = text.lower()
     text = re.sub(r'[^a-zA-Z\s]', '', text)
     sequences = tokenizer.texts_to_sequences([text])
