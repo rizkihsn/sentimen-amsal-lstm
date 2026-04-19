@@ -93,13 +93,17 @@ st.markdown("""
 # 3. LOAD MODEL
 @st.cache_resource
 def load_model_ai():
-    model = tf.keras.models.load_model('model_training/sentiment_model_lstm.h5')
+    model = tf.keras.models.load_model(
+        'model_training/sentiment_model_lstm.h5',
+        compile=False
+    )
+    
     with open('model_training/tokenizer.pkl', 'rb') as handle:
         tokenizer = pickle.load(handle)
+        
     return model, tokenizer
 
 model, tokenizer = load_model_ai()
-
 # 4. FUNGSI PREDIKSI
 def predict_sentiment(text, model, tokenizer):
     text = text.lower()
